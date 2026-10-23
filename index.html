@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Tạo Mã VCI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Bố cục: dải tóm tắt "đọc mã" trên cùng; dưới chia 2 cột: trái bấm chọn từng tầng, phải là mã đang ghép (dính khi cuộn) */
+:root {
+  color-scheme: dark;
+  --bg: #000000;
+  --panel: #0e0f11;
+  --panel-2: #1c1c1e;
+  --line: #2c2c2e;
+  --line-2: #48484a;
+  --fg: #f5f5f7;
+  --muted: #8e8e93;
+  --ok: #30d158;
+  --bad: #ff3b30;
+  --warn: #ffd60a;
+  --info: #0a84ff;
+  --s-pre: #8e8e93;
+  --s-dong: #0a84ff;
+  --s-kc: #32d9ff;
+  --s-lc: #bf5af2;
+  --s-tn: #ff9f0a;
+  --s-lenh: #c7c7cc;
+  --grid: rgba(255, 255, 255, .035);
+  --f-ui: "Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", "Cascadia Mono", Consolas, "SFMono-Regular", monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f3f4f5; --panel: #ffffff; --panel-2: #eceef0; --line: #d6d9dc; --line-2: #a7abb1;
+    --fg: #0c0d0f; --muted: #5b5f66; --ok: #1e9a4a; --bad: #d4271b; --warn: #9a7400; --info: #0060df;
+    --s-pre: #5b5f66; --s-dong: #0060df; --s-kc: #08799a; --s-lc: #8a3fc2; --s-tn: #b35f00; --s-lenh: #3a3d42;
+    --grid: rgba(0, 0, 0, .045);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f4f5; --panel: #ffffff; --panel-2: #eceef0; --line: #d6d9dc; --line-2: #a7abb1;
+  --fg: #0c0d0f; --muted: #5b5f66; --ok: #1e9a4a; --bad: #d4271b; --warn: #9a7400; --info: #0060df;
+  --s-pre: #5b5f66; --s-dong: #0060df; --s-kc: #08799a; --s-lc: #8a3fc2; --s-tn: #b35f00; --s-lenh: #3a3d42;
+  --grid: rgba(0, 0, 0, .045);
+}
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--fg);
+  font-family: var(--f-ui);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 26px 40px;
+  display: grid;
+  gap: 18px;
+}
+.wrap > *, .layout > * { min-width: 0; }
+code, .mono { font-family: var(--f-mono); }
+h1, h2 { margin: 0; text-wrap: balance; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 1px solid var(--info); outline-offset: 2px; }
+.c-pre { --c: var(--s-pre); } .c-dong { --c: var(--s-dong); } .c-kc { --c: var(--s-kc); } .c-lc { --c: var(--s-lc); } .c-tn { --c: var(--s-tn); } .c-lenh { --c: var(--s-lenh); }
+
+/* khung HUD */
+.hud { position: relative; background: var(--panel); border: 1px solid var(--line); }
+.hud::before, .hud::after { content: ""; position: absolute; width: 12px; height: 12px; border: 0 solid var(--line-2); pointer-events: none; }
+.hud::before { top: -1px; left: -1px; border-top-width: 1px; border-left-width: 1px; }
+.hud::after { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
+.lbl { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* đầu trang */
+.eyebrow { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.eyebrow .dot { width: 6px; height: 6px; background: var(--ok); box-shadow: 0 0 8px color-mix(in srgb, var(--ok) 45%, transparent); display: inline-block; margin-right: 6px; }
+h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 700; letter-spacing: -.01em; margin-top: 6px; }
+.lead { color: var(--muted); margin: 4px 0 0; max-width: 62ch; }
+
+/* tóm tắt đọc mã */
+.howto { padding: 14px 16px; display: grid; gap: 12px; }
+.khuon { font-family: var(--f-mono); font-size: clamp(14px, 1.9vw, 18px); overflow-x: auto; white-space: nowrap; padding-bottom: 2px; }
+.khuon span { color: var(--c); }
+.khuon i { font-style: normal; color: var(--muted); }
+.nho { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.nho div { border-left: 2px solid var(--c); padding: 2px 0 2px 10px; font-size: 13.5px; color: var(--muted); }
+.nho b { color: var(--fg); font-weight: 600; }
+.nho code { color: var(--c); font-size: 13px; }
+
+/* 2 cột */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 430px); gap: 18px; align-items: start; }
+.picker { padding: 6px 16px; }
+.prow { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.prow:last-child { border-bottom: 0; }
+.plabel { display: grid; align-content: start; gap: 2px; padding-top: 4px; }
+.plabel b { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.plabel small { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.pbody { display: grid; gap: 10px; min-width: 0; }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.optw { display: inline-flex; }
+.opt {
+  display: grid; gap: 1px; text-align: left; cursor: pointer;
+  background: var(--panel-2); border: 1px solid var(--line); padding: 5px 10px 4px; min-width: 0;
+}
+.opt b { font-family: var(--f-mono); font-weight: 500; font-size: 13.5px; }
+.opt small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.opt:hover { border-color: var(--line-2); }
+.opt[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 15%, var(--panel-2)); }
+.opt[aria-pressed="true"] b { color: var(--c); }
+.opt.none b { color: var(--muted); }
+.opt.moi { border-style: dashed; }
+.opt .tag { font-family: var(--f-mono); font-size: 10px; letter-spacing: .08em; color: var(--warn); margin-left: 6px; }
+.xoa { background: var(--panel-2); border: 1px dashed var(--line); border-left: 0; cursor: pointer; color: var(--muted); padding: 0 8px; font-size: 14px; }
+.xoa:hover { color: var(--bad); border-color: var(--bad); }
+.opt.add { border-style: dashed; align-content: center; color: var(--muted); }
+.opt.add b { font-family: var(--f-ui); font-weight: 600; font-size: 13px; }
+.opt.add:hover { color: var(--fg); border-color: var(--c); }
+.txt { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); padding: 8px 10px; font-size: 14.5px; }
+.txt:focus { border-color: var(--info); outline: none; }
+.txt-row { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+
+/* form thêm từ */
+.addf { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) max-content; gap: 8px; align-items: end; padding: 10px; border: 1px dashed var(--c); background: color-mix(in srgb, var(--c) 6%, var(--panel)); }
+.addf label { display: grid; gap: 4px; min-width: 0; }
+.addf .chk { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.addf .btns { display: flex; gap: 6px; }
+.addf .err { grid-column: 1 / -1; font-size: 13px; color: var(--bad); min-height: 0; }
+.addf .err:empty { display: none; }
+.addf .hint { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+
+.btn { background: var(--panel-2); border: 1px solid var(--line-2); padding: 7px 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.btn:hover { border-color: var(--fg); }
+.btn.primary { background: color-mix(in srgb, var(--ok) 16%, var(--panel-2)); border-color: var(--ok); }
+.btn.sm { padding: 2px 8px; font-size: 12px; }
+
+/* kết quả */
+.result { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); }
+.anat { display: flex; flex-wrap: wrap; align-items: flex-start; row-gap: 10px; }
+.anat .sep { font-family: var(--f-mono); font-size: 19px; color: var(--muted); padding: 0 3px; line-height: 1.3; }
+.anat .seg { display: grid; gap: 5px; color: var(--c); min-width: 0; }
+.anat .seg b { font-family: var(--f-mono); font-weight: 500; font-size: 19px; line-height: 1.3; padding-bottom: 5px; border-bottom: 1px solid currentColor; position: relative; word-break: break-all; }
+.anat .seg b::after { content: ""; position: absolute; left: 0; bottom: -3px; width: 5px; height: 5px; background: currentColor; }
+.anat .seg small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.anat .seg small i { font-style: normal; display: block; color: var(--fg); font-weight: 600; }
+.doc { margin: 0; font-size: 14px; color: var(--muted); }
+.doc b { color: var(--fg); font-weight: 600; }
+.outs { display: grid; gap: 8px; }
+.out { display: grid; gap: 4px; padding: 10px 12px; background: var(--panel-2); border-left: 2px solid var(--c); }
+.out .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.out .v { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; min-width: 0; }
+.out code { font-size: 14px; word-break: break-all; }
+.out .t { font-size: 14px; }
+.out.empty { color: var(--muted); font-size: 13px; border-left-color: var(--line-2); }
+.warn { font-size: 13px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--line)); color: var(--fg); background: color-mix(in srgb, var(--warn) 8%, var(--panel)); }
+.warn b { color: var(--warn); }
+.tumoi { display: grid; gap: 8px; border-top: 1px dashed var(--line-2); padding-top: 12px; }
+.tumoi ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.tumoi li code { color: var(--warn); }
+.tumoi .note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.foot { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--ok); padding: 8px 14px; font-size: 13.5px; }
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .result { position: static; }
+  .nho { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .prow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .plabel { grid-template-columns: max-content 1fr; gap: 8px; align-items: baseline; }
+  .nho { grid-template-columns: minmax(0, 1fr); }
+  .addf { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span><span class="dot" aria-hidden="true"></span>VCI BIM Group</span><span id="phienBan">Quy ước đặt mã</span><span>Bộ giải pháp 2D / 3D cho cầu</span></div>
+    <h1>Tạo mã VCI</h1>
+    <p class="lead">Bấm chọn từng hàng, mã và tên tự ghép đúng quy ước. Chưa có từ cần dùng thì bấm <b>+ Thêm</b>.</p>
+  </header>
+
+  <section class="hud howto" aria-label="Cách đọc mã">
+    <div class="khuon"><span class="c-pre">VCI</span><i>-</i><span class="c-dong">DÒNG</span><i>-</i><span class="c-kc">KẾT CẤU</span><i>-</i><span class="c-lc">LOẠI CẦU</span><i>.</i><span class="c-tn">BộMônCấuKiện</span><i>.</i><span class="c-lenh">Khác</span></div>
+    <div class="nho">
+      <div class="c-dong"><b><code>2D</code> ra bản vẽ, <code>3D</code> ra mô hình</b><br>không ghi tên phần mềm</div>
+      <div class="c-lc"><b>Không ghi loại cầu</b><br>= dùng cho mọi loại cầu</div>
+      <div class="c-tn"><b>Không ghi cấu kiện</b><br>= cả kết cấu (KCPD / KCPT)</div>
+      <div class="c-lenh"><b>Khác: tùy chọn</b><br>mặc định không có, tự thêm khi cần</div>
+    </div>
+  </section>
+
+  <div class="layout">
+    <section class="hud picker" aria-label="Chọn từng tầng">
+      <div class="prow c-dong" id="r-dong">
+        <div class="plabel"><b>Dòng</b><small>bắt buộc</small></div>
+        <div class="pbody"><div class="opts" data-tang="dong"></div></div>
+      </div>
+      <div class="prow c-kc" id="r-tuDo" hidden>
+        <div class="plabel"><b>Tên ngắn</b><small>dòng WEB / DEV</small></div>
+        <div class="pbody"><input class="txt mono" id="inTuDo" type="text" value="REVIT" placeholder="vd: REVIT" autocomplete="off" spellcheck="false" aria-label="Tên ngắn"></div>
+      </div>
+      <div class="prow c-kc" id="r-ketCau">
+        <div class="plabel"><b>Kết cấu</b><small>bắt buộc</small></div>
+        <div class="pbody"><div class="opts" data-tang="ketCau"></div></div>
+      </div>
+      <div class="prow c-lc" id="r-loaiCau">
+        <div class="plabel"><b>Loại cầu</b><small>chỉ khi riêng 1 loại</small></div>
+        <div class="pbody"><div class="opts" data-tang="loaiCau"></div></div>
+      </div>
+      <div class="prow c-tn" id="r-boMon">
+        <div class="plabel"><b>Bộ môn</b><small>đầu tên tính năng</small></div>
+        <div class="pbody"><div class="opts" data-tang="boMon"></div></div>
+      </div>
+      <div class="prow c-tn" id="r-cauKien">
+        <div class="plabel"><b>Cấu kiện</b><small>bỏ trống = cả kết cấu</small></div>
+        <div class="pbody"><div class="opts" data-tang="cauKien"></div></div>
+      </div>
+      <div class="prow c-tn" id="r-tienIch" hidden>
+        <div class="plabel"><b>Tính năng</b><small>động từ + đối tượng</small></div>
+        <div class="pbody">
+          <div class="opts" data-tang="dongTu" data-vai="tn"></div>
+          <div class="txt-row"><span>Đối tượng</span><input class="txt" id="inDoiTuongTN" type="text" value="IFC" placeholder="vd: IFC, mô hình" autocomplete="off"></div>
+        </div>
+      </div>
+      <div class="prow c-lenh" id="r-khac">
+        <div class="plabel"><b>Khác</b><small>tùy chọn, mặc định không có</small></div>
+        <div class="pbody"><div class="opts" data-tang="khac"></div></div>
+      </div>
+    </section>
+
+    <aside class="hud result" aria-live="polite" aria-label="Mã đang tạo">
+      <div class="lbl">Mã đang tạo</div>
+      <div class="anat" id="anat"></div>
+      <p class="doc" id="docLa"></p>
+      <div class="outs" id="outs"></div>
+      <div class="row"><button class="btn primary" id="btnChepHet" type="button">Chép cả mã và tên</button><span class="doc" style="font-size:12.5px">dán thẳng vào Excel</span></div>
+      <div id="canhBao"></div>
+      <div class="tumoi" id="tuMoi" hidden>
+        <div class="lbl" style="color:var(--warn)">Từ mới chưa duyệt</div>
+        <ul id="dsTuMoi"></ul>
+        <div class="row"><button class="btn sm" id="btnDeXuat" type="button">Chép đề xuất gửi người duyệt</button><button class="btn sm" id="btnXoaHet" type="button">Xóa hết từ mới</button></div>
+        <p class="note">Từ mới chỉ lưu trên trình duyệt này. Gửi người duyệt để đưa vào từ điển chung trước khi tạo mã trên portal.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="foot"><span id="footVer"></span><span>Quy tắc đầy đủ: BaoCao_QuyUocDatTen_VCI.docx</span><span>Mã đã cấp license cho khách thì không đổi</span></footer>
+  <div id="jsLoi" hidden></div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+window.addEventListener('error', function (e) { var b = document.getElementById('jsLoi'); if (b) b.textContent += '[JS] ' + e.message + '\n'; });
+</script>
+<script>
+/*!
+ * VCI Naming Core — quy ước đặt mã và tên sản phẩm VCI (bộ 2D/3D cho cầu)
+ * MỘT NGUỒN DUY NHẤT cho: tool kiểm tra (HTML), báo cáo (Word), bộ test (Node).
+ * Dev có thể nhúng nguyên file này vào portal để chặn mã sai ngay lúc nhập:
+ *   VCINaming.kiemTra('VCI-3D-KCPD.ThepBe', 'Thép bệ')  ->  { muc: 'dung' | 'canhBao' | 'sai', loi: [...], goiY }
+ *
+ * Khuôn:
+ *   Mã sản phẩm : VCI-{DÒNG}-{KẾT CẤU}[-{LOẠI CẦU}]     không có loại cầu = dùng cho mọi loại cầu
+ *   Mã tính năng: {Mã sản phẩm}.{BoMon}{CauKien}[.{Khac}]   bỏ cấu kiện = cả kết cấu; Khác tùy chọn
+ *   Tên tính năng viết đủ như sản phẩm: "VCI 3D · KCPD · Cốt thép cọc khoan nhồi"
+ */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.VCINaming = api;
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ===================================================================================
+  // TỪ ĐIỂN — chỉ dùng từ trong đây. Thêm từ mới: đề xuất -> người duyệt -> sửa ở đây,
+  // tăng phienBan, cập nhật báo cáo (chạy lại report/make-report.js).
+  // ===================================================================================
+  var TU_DIEN = {
+    phienBan: '1.0',
+    ngay: '22/10/2026',
+    tienTo: 'VCI',
+    doDaiToiDa: 19, // vừa 1 dòng ở cột "Mã" trên portal
+    dong: {
+      '2D': { ten: '2D', nghia: 'Tool ra bản vẽ' },
+      '3D': { ten: '3D', nghia: 'Tool ra mô hình' },
+      WEB: { ten: 'Web', nghia: 'Ứng dụng web' },
+      DEV: { ten: 'Dev', nghia: 'Nội bộ / thử nghiệm, không bán' }
+    },
+    ketCau: {
+      KCPD: { ten: 'KCPD', tenNho: 'KCPD', nghia: 'Kết cấu phần dưới', coLoaiCau: true },
+      KCPT: { ten: 'KCPT', tenNho: 'KCPT', nghia: 'Kết cấu phần trên', coLoaiCau: true },
+      TIENICH: { ten: 'Tiện ích', tenNho: 'tiện ích', nghia: 'Tiện ích, không gắn kết cấu', tienIch: true },
+      HAMCHUI: { ten: 'Hầm chui', tenNho: 'hầm chui', nghia: 'Công trình hầm chui' },
+      THOATNUOC: { ten: 'Thoát nước', tenNho: 'thoát nước', nghia: 'Công trình thoát nước' }
+    },
+    loaiCau: {
+      SUPERT: { ten: 'Cầu dầm Super T' },
+      DAMI: { ten: 'Cầu dầm I' },
+      DAMBAN: { ten: 'Cầu dầm bản' },
+      DUCHANG: { ten: 'Cầu đúc hẫng' }
+    },
+    // tenDu = tên viết đầy đủ, dùng trong tên tính năng ("VCI 3D · KCPD · Cốt thép cọc khoan nhồi")
+    boMon: {
+      Btc: { ten: 'BTC', tenDu: 'Bố trí chung', nghia: 'Bố trí chung' },
+      BeTong: { ten: 'Bê tông', tenDu: 'Bê tông', nghia: 'Bê tông (hình học, kích thước)' },
+      Thep: { ten: 'Thép', tenDu: 'Cốt thép', nghia: 'Cốt thép' },
+      Cap: { ten: 'Cáp DƯL', tenDu: 'Cáp dự ứng lực', nghia: 'Cáp dự ứng lực' },
+      VanKhuon: { ten: 'Ván khuôn', tenDu: 'Ván khuôn', nghia: 'Ván khuôn' },
+      KhoiLuong: { ten: 'Khối lượng', tenDu: 'Khối lượng', nghia: 'Khối lượng, thống kê vật liệu' }
+    },
+    cauKien: {
+      CocKhoanNhoi: { ten: 'cọc khoan nhồi', thuoc: ['KCPD'] },
+      Be: { ten: 'bệ', thuoc: ['KCPD'] },
+      ThanTru: { ten: 'thân trụ', thuoc: ['KCPD'] },
+      XaMu: { ten: 'xà mũ', thuoc: ['KCPD'] },
+      Tru: { ten: 'trụ', thuoc: ['KCPD'], ghiChu: 'cả trụ: cọc, bệ, thân, xà mũ (dùng cho BTC)' },
+      Mo: { ten: 'mố', thuoc: ['KCPD'] },
+      Dam: { ten: 'dầm', thuoc: ['KCPT'] },
+      DamNgang: { ten: 'dầm ngang', thuoc: ['KCPT'] },
+      BanMatCau: { ten: 'bản mặt cầu', thuoc: ['KCPT'] },
+      DotHam: { ten: 'đốt hầm', thuoc: ['HAMCHUI'] },
+      Cong: { ten: 'cống', thuoc: ['THOATNUOC'] },
+      HoGa: { ten: 'hố ga', thuoc: ['THOATNUOC'] }
+    },
+    dongTu: {
+      ThietLap: { ten: 'Thiết lập' },
+      Tao: { ten: 'Tạo' },
+      Sua: { ten: 'Sửa' },
+      Tach: { ten: 'Tách' },
+      KiemTra: { ten: 'Kiểm tra' },
+      Xuat: { ten: 'Xuất' },
+      Nhap: { ten: 'Nhập' },
+      ThongKe: { ten: 'Thống kê' }
+    },
+    // Khác: tầng cuối tùy chọn của mã tính năng. Mặc định KHÔNG có giá trị nào;
+    // người dùng thêm trong tool (+ Thêm), gửi duyệt rồi mới đưa vào đây. Dạng: Ma: { ten: 'tên tiếng Việt' }
+    khac: {}
+  };
+
+  // ===================================================================================
+  // QUY TẮC — mỗi lỗi tool báo đều gắn mã quy tắc để tra trong báo cáo
+  // ===================================================================================
+  var QUY_TAC = {
+    R1: { ten: 'Ký tự', noiDung: 'Chỉ dùng chữ không dấu (A–Z, a–z), số (0–9), gạch ngang (-) và dấu chấm (.). Không dấu tiếng Việt, không khoảng trắng, không gạch dưới.' },
+    R2: { ten: 'Số tầng', noiDung: 'Tối đa 3 tầng ngăn bằng dấu chấm: SảnPhẩm.TínhNăng.Khác. Dấu chấm chỉ dùng để ngăn tầng, không có tầng rỗng.' },
+    R3: { ten: 'Mã sản phẩm', noiDung: 'Viết IN HOA, các phần nối bằng gạch ngang, bắt đầu bằng VCI-, tối đa 4 phần: VCI-DÒNG-KẾT CẤU-LOẠI CẦU.' },
+    R4: { ten: 'Dòng', noiDung: 'Phần thứ 2: 2D (tool ra bản vẽ), 3D (tool ra mô hình), WEB, DEV. Ghi theo đầu ra, không ghi tên phần mềm (phần mềm ghi ở cột Nền tảng).' },
+    R5: { ten: 'Kết cấu', noiDung: 'Phần thứ 3 là kết cấu / hạng mục trong từ điển: KCPD, KCPT, TIENICH, HAMCHUI, THOATNUOC. Kết cấu đứng trước loại cầu.' },
+    R6: { ten: 'Loại cầu', noiDung: 'Phần thứ 4 (tùy chọn) là loại cầu, chỉ đi sau KCPD hoặc KCPT. Dùng cho mọi loại cầu thì bỏ trống, không ghi CHUNG.' },
+    R7: { ten: 'Tính năng', noiDung: 'Viết liền, hoa chữ đầu mỗi tiếng. Gồm Bộ môn + Cấu kiện; bỏ cấu kiện = cả kết cấu. Riêng TIENICH: Động từ + đối tượng.' },
+    R8: { ten: 'Cấu kiện đúng kết cấu', noiDung: 'Cọc, bệ, thân trụ, xà mũ, trụ, mố thuộc KCPD; dầm, dầm ngang, bản mặt cầu thuộc KCPT; đốt hầm thuộc HAMCHUI; cống, hố ga thuộc THOATNUOC.' },
+    R9: { ten: 'Khác (tùy chọn)', noiDung: 'Tầng thứ 3, mặc định không có. Dùng khi cần tách một tính năng thành biến thể riêng. Viết liền, hoa chữ đầu mỗi tiếng; giá trị lấy trong từ điển Khác (người dùng thêm, cần duyệt).' },
+    R10: { ten: 'Độ dài', noiDung: 'Mã sản phẩm tối đa 19 ký tự để vừa một dòng ở cột Mã trên portal.' },
+    R11: { ten: 'Tên hiển thị', noiDung: 'Sản phẩm: "VCI {Dòng} · {Kết cấu} · {Loại cầu}". Tính năng viết đủ: "{tên sản phẩm} · {Bộ môn đầy đủ} {cấu kiện}" (+ " · {Khác}"), ví dụ "VCI 3D · KCPD · Cốt thép cọc khoan nhồi".' },
+    R12: { ten: 'Không nhét thuộc tính', noiDung: 'Không đưa trạng thái (nội bộ, test, ngừng), ngày, phiên bản, tên phần mềm, chữ Tool/Add-in vào mã hay tên. Ghi ở cột riêng.' },
+    R13: { ten: 'Không trùng', noiDung: 'Mỗi mã chỉ xuất hiện một lần trong danh sách.' },
+    R14: { ten: 'Mã bất biến', noiDung: 'Mã đã cấp license cho khách thì không đổi. Muốn đổi cách gọi thì đổi tên hiển thị. (Quy trình, tool không kiểm được.)' }
+  };
+
+  // Mã cũ đang có trên portal -> mã mới
+  var MA_CU = [
+    { cu: 'VCI-ACAD-ADDINS', moi: 'VCI-2D-TIENICH', tenCu: 'AutoCAD Ultimate Tools' },
+    { cu: 'VCI-INFRA', moi: 'VCI-WEB-INFRA', tenCu: 'VCI Infra', ghiChu: 'tạm, cần xác nhận chức năng' },
+    { cu: 'VCI-2D', moi: null, tenCu: 'VCI-2D', ghiChu: 'không còn là sản phẩm; chia tính năng về VCI-2D-KCPD / VCI-2D-KCPT-…' },
+    { cu: '202608-THEP-BE', moi: 'VCI-2D-KCPD.ThepBe', tenCu: 'VCI-2D (Thép bệ)', ghiChu: 'thành tính năng; 202608 chuyển sang cột Phiên bản' },
+    { cu: 'VCI-CDH', moi: 'VCI-3D-KCPT-DUCHANG', tenCu: 'VCI_Tool Cáp cầu Đúc Hẫng' },
+    { cu: 'INTERNAL-REVIT-ADD-IN-TEST', moi: 'VCI-DEV-REVIT', tenCu: '[Nội bộ] Revit Add In Test', ghiChu: '"nội bộ" chuyển sang cột Trạng thái' },
+    { cu: /^VCI-CIVIL3D-/i, hienThi: 'VCI-CIVIL3D-…', moi: 'VCI-3D-THOATNUOC', tenCu: 'vci-civil3d-drainage', ghiChu: 'nền tảng Civil 3D ghi ở cột Nền tảng' },
+    { cu: 'VCI.Revit.TendonManager.SettingFamily', moi: 'VCI-3D-KCPT-DUCHANG.Cap', tenCu: 'Thiết lập Family', ghiChu: 'gộp vào tính năng Cáp dự ứng lực; là nút bấm, không có mã riêng' },
+    { cu: 'VCI.Revit.TendonManager.BottomEdgeTendon', moi: 'VCI-3D-KCPT-DUCHANG.Cap', tenCu: 'Thiết lập thông số cáp dưới nhịp biên', ghiChu: 'gộp vào tính năng Cáp dự ứng lực; là nút bấm, không có mã riêng' },
+    { cu: 'VCI.Revit.TendonManager.BottomMiddleTendon', moi: 'VCI-3D-KCPT-DUCHANG.Cap', tenCu: 'Thiết lập thông số cáp dưới nhịp giữa', ghiChu: 'gộp vào tính năng Cáp dự ứng lực; là nút bấm, không có mã riêng' },
+    { cu: 'VCI.Revit.TendonManager.TopTendon', moi: 'VCI-3D-KCPT-DUCHANG.Cap', tenCu: 'Thiết lập thông số cáp trên', ghiChu: 'gộp vào tính năng Cáp dự ứng lực; là nút bấm, không có mã riêng' },
+    { cu: 'VCI.Revit.TendonManager.BuildTendons', moi: 'VCI-3D-KCPT-DUCHANG.Cap', tenCu: 'Tạo cáp', ghiChu: 'gộp vào tính năng Cáp dự ứng lực; là nút bấm, không có mã riêng' }
+  ];
+
+  // Các cách viết nhầm hay gặp
+  var PHAN_MEM = ['ACAD', 'AUTOCAD', 'CAD', 'REVIT', 'RVT', 'CIVIL3D', 'C3D', 'CIVIL', 'NAVIS', 'NAVISWORKS', 'TEKLA', 'DYNAMO'];
+  var TU_CHUNG = ['CHUNG', 'COMMON', 'ALL', 'TATCA', 'DUNGCHUNG', 'GEN', 'GENERAL'];
+  var NHAM_KET_CAU = {
+    DUOI: 'KCPD', PD: 'KCPD', PHANDUOI: 'KCPD', KCD: 'KCPD', SUB: 'KCPD', SUBSTRUCTURE: 'KCPD', KCPDUOI: 'KCPD',
+    TREN: 'KCPT', PT: 'KCPT', PHANTREN: 'KCPT', KCT: 'KCPT', SUPER: 'KCPT', SUPERSTRUCTURE: 'KCPT', KCPTREN: 'KCPT',
+    TI: 'TIENICH', UTIL: 'TIENICH', UTILS: 'TIENICH', TIENICHCHUNG: 'TIENICH',
+    HAM: 'HAMCHUI', TN: 'THOATNUOC', DRAINAGE: 'THOATNUOC', UNDERPASS: 'HAMCHUI'
+  };
+  var NHAM_LOAI_CAU = { SUPER_T: 'SUPERT', DAMSUPERT: 'SUPERT', DUCHANGCANBANG: 'DUCHANG', DH: 'DUCHANG', CANTILEVER: 'DUCHANG', IGIRDER: 'DAMI', SLAB: 'DAMBAN' };
+  var TU_THUOC_TINH = /^(TEST|NOIBO|INTERNAL|DEMO|BETA|ALPHA|NGUNG|TOOL|TOOLS|ADDIN|ADDINS|PLUGIN|V\d+|\d{4,})$/;
+  var TU_THUOC_TINH_TEN = ['test', 'noi bo', 'tool', 'add in', 'addin', 'add-in', 'plugin', 'autocad', 'revit', 'civil 3d', 'civil3d', 'ngung', 'beta', 'demo', 'internal'];
+
+  // ===================================================================================
+  // Tiện ích chữ
+  // ===================================================================================
+  function boDau(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  }
+  // "cáp dưới nhịp biên" -> "CapDuoiNhipBien"; "xuất IFC" -> "XuatIfc"
+  function sangPascal(s) {
+    return boDau(s).split(/[^A-Za-z0-9]+/).filter(Boolean).map(function (w) {
+      var dau = w.charAt(0).toUpperCase();
+      var duoi = w.slice(1);
+      if (w.length > 1 && w === w.toUpperCase()) duoi = duoi.toLowerCase();
+      return dau + duoi;
+    }).join('');
+  }
+  function laPascal(s) { return /^[A-Z][A-Za-z0-9]*$/.test(s); }
+  function khoa(obj) { return Object.keys(obj); }
+  function timKhoaKhongPhanBietHoa(obj, tu) {
+    var t = String(tu).toLowerCase();
+    var ds = khoa(obj).filter(function (k) { return k.toLowerCase() === t; });
+    return ds.length ? ds[0] : null;
+  }
+  // khoảng cách sửa chữ (có tính đổi chỗ 2 ký tự liền nhau: KCDP ~ KCPD = 1)
+  function khoangCach(a, b) {
+    a = String(a).toLowerCase(); b = String(b).toLowerCase();
+    var m = a.length, n = b.length, d = [], i, j;
+    for (i = 0; i <= m; i++) { d[i] = [i]; }
+    for (j = 0; j <= n; j++) { d[0][j] = j; }
+    for (i = 1; i <= m; i++) {
+      for (j = 1; j <= n; j++) {
+        var c = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+    return d[m][n];
+  }
+  // Từ gần nhất trong danh sách (chỉ trả khi đủ gần và không hòa)
+  function ganNhat(tu, ds) {
+    if (!tu) return null;
+    var tot = null, min = Infinity, hoa = 0;
+    ds.forEach(function (k) {
+      var c = khoangCach(tu, k);
+      if (c < min) { min = c; tot = k; hoa = 1; } else if (c === min) { hoa++; }
+    });
+    var nguong = Math.max(1, Math.floor(String(tu).length / 3));
+    if (tot && min <= nguong && hoa === 1) return tot;
+    // viết thiếu đuôi: "Coc" -> "CocKhoanNhoi" (chỉ khi duy nhất)
+    var dau = ds.filter(function (k) { return String(tu).length >= 2 && k.toLowerCase().indexOf(String(tu).toLowerCase()) === 0; });
+    return dau.length === 1 ? dau[0] : null;
+  }
+  // Tách tiền tố dài nhất khớp 1 khóa trong obj. phanBietHoa=false để dò sai chữ hoa.
+  function tachTienTo(s, obj, phanBietHoa) {
+    var ds = khoa(obj).sort(function (a, b) { return b.length - a.length; });
+    for (var i = 0; i < ds.length; i++) {
+      var k = ds[i];
+      var dau = s.slice(0, k.length);
+      if (phanBietHoa ? dau === k : dau.toLowerCase() === k.toLowerCase()) return { khoa: k, conLai: s.slice(k.length), viet: dau };
+    }
+    return null;
+  }
+  function timMaCu(ma) {
+    for (var i = 0; i < MA_CU.length; i++) {
+      var m = MA_CU[i];
+      if (m.cu instanceof RegExp ? m.cu.test(ma) : m.cu.toLowerCase() === ma.toLowerCase()) return m;
+    }
+    return null;
+  }
+  function duyNhat(chuoi) {
+    var r = [];
+    chuoi.split('').forEach(function (c) { if (r.indexOf(c) < 0) r.push(c); });
+    return r.join(' ');
+  }
+
+  // ===================================================================================
+  // Phân tích mã
+  // ===================================================================================
+  function phanTich(maVao, tuyChon) {
+    tuyChon = tuyChon || {};
+    var ma = String(maVao == null ? '' : maVao).trim();
+    var kq = {
+      ma: ma, loai: null, muc: 'dung', phan: [], loi: [], docLa: '',
+      tenChuan: { sanPham: null, tinhNang: null, phanTN: null, tienToTen: null },
+      goiY: null, nguCanh: {}
+    };
+    function them(muc, qt, noiDung, sua) { kq.loi.push({ muc: muc, qt: qt, noiDung: noiDung, sua: sua || null }); }
+    function phan(tang, gt, ok, nghia) { kq.phan.push({ tang: tang, gt: gt, ok: ok, nghia: nghia || '' }); }
+
+    if (!ma) { them('sai', 'R2', 'Chưa nhập mã.'); return ketThuc(kq, null, tuyChon); }
+
+    // 0. Mã cũ đã biết
+    var cu = timMaCu(ma);
+    if (cu) {
+      kq.loai = 'cu';
+      them('sai', 'R3', 'Mã kiểu cũ, chưa theo quy ước' + (cu.moi ? '. Mã mới: ' + cu.moi : '') + (cu.ghiChu ? ' (' + cu.ghiChu + ')' : '') + '.', cu.moi);
+      phan('Mã cũ', ma, false, cu.tenCu || '');
+      return ketThuc(kq, cu.moi, tuyChon);
+    }
+
+    // 1. Ký tự (R1)
+    var sach = ma;
+    if (/[^\x20-\x7E]/.test(ma)) {
+      sach = boDau(ma);
+      var conLa = sach.replace(/[\x20-\x7E]/g, '');
+      them('sai', 'R1', conLa ? 'Có ký tự không hợp lệ: ' + duyNhat(conLa) + '.' : 'Có chữ có dấu tiếng Việt. Viết không dấu.');
+      sach = sach.replace(/[^\x20-\x7E]/g, '');
+    }
+    if (/\s/.test(sach)) them('sai', 'R1', 'Có khoảng trắng. Phần sản phẩm nối bằng gạch ngang (-), phần tính năng viết liền.');
+    if (/_/.test(sach)) them('sai', 'R1', 'Có gạch dưới (_). Dùng gạch ngang (-).');
+    var la = sach.replace(/[A-Za-z0-9.\-_\s]/g, '');
+    if (la) them('sai', 'R1', 'Có ký tự không hợp lệ: ' + duyNhat(la) + '.');
+    sach = sach.replace(/[^A-Za-z0-9.\-_\s]/g, '');
+
+    // 2. Tầng (R2)
+    var tang = sach.split('.');
+    if (tang.length > 3) them('sai', 'R2', 'Có ' + tang.length + ' tầng. Tối đa 3 tầng: SảnPhẩm.TínhNăng.Khác.');
+    if (tang.some(function (t) { return t.trim() === ''; })) them('sai', 'R2', 'Có dấu chấm thừa hoặc tầng rỗng.');
+    var spRaw = tang[0] || '', tnRaw = tang.length > 1 ? tang[1] : null, khacRaw = tang.length > 2 ? tang[2] : null;
+    kq.loai = tnRaw != null ? 'tinhNang' : 'sanPham';
+
+    // Mã dạng chấm kiểu cũ: VCI.Revit.X.Y
+    if (/^vci$/i.test(spRaw.trim()) && tang.length > 1) {
+      them('sai', 'R3', 'Mã sản phẩm dùng gạch ngang (VCI-3D-…). Dấu chấm chỉ để ngăn sản phẩm với tính năng.');
+      phan('Sản phẩm', spRaw, false);
+      return ketThuc(kq, null, tuyChon);
+    }
+
+    var sua = { sp: null, tn: null, khac: null };
+    var ctx = kiemSanPham(spRaw, kq, them, phan, sua);
+    if (tnRaw != null && tnRaw.trim() !== '') kiemTinhNang(tnRaw, ctx, kq, them, phan, sua);
+    else if (tnRaw != null) sua.tn = null;
+    if (khacRaw != null && khacRaw.trim() !== '') kiemKhac(khacRaw, ctx, kq, them, phan, sua);
+
+    // Câu đọc: bộ môn + cấu kiện gộp thành phần tính năng ("Cốt thép cọc khoan nhồi")
+    var doc = [];
+    kq.phan.forEach(function (p) {
+      if (!p.ok || !p.nghia) return;
+      if (p.tang === 'Bộ môn' && kq.tenChuan.phanTN) doc.push(kq.tenChuan.phanTN);
+      else if (p.tang === 'Cấu kiện' && kq.tenChuan.phanTN) return;
+      else doc.push(p.nghia);
+    });
+    kq.docLa = doc.join(' · ');
+
+    // Gợi ý sửa
+    var deXuat = null;
+    if (sua.sp && (tnRaw == null || sua.tn) && (khacRaw == null || sua.khac)) {
+      deXuat = sua.sp + (sua.tn ? '.' + sua.tn : '') + (sua.khac ? '.' + sua.khac : '');
+    }
+    return ketThuc(kq, deXuat, tuyChon);
+  }
+
+  function kiemSanPham(raw, kq, them, phan, sua) {
+    var ctx = { dong: null, ketCau: null, loaiCau: null, ok: true };
+    kq.nguCanh = ctx;
+    if (/[a-z]/.test(raw)) them('sai', 'R3', 'Phần mã sản phẩm phải viết IN HOA.');
+    var S = raw.replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toUpperCase().split('-').filter(Boolean);
+    var fix = { vci: 'VCI', dong: null, ketCau: null, loaiCau: undefined };
+    var fixOk = true;
+
+    // Tiền tố
+    if (S[0] !== 'VCI') {
+      if (S[0] && TU_DIEN.dong[S[0]]) { them('sai', 'R3', 'Thiếu tiền tố VCI- ở đầu.'); S.unshift('VCI'); }
+      else if (S[0] && ganNhat(S[0], ['VCI'])) { them('sai', 'R3', 'Tiền tố phải là VCI (đang viết ' + S[0] + ').'); S[0] = 'VCI'; }
+      else { them('sai', 'R3', 'Mã sản phẩm phải bắt đầu bằng VCI-.'); phan('Tiền tố', S[0] || '', false); ctx.ok = false; return ctx; }
+    }
+    phan('Tiền tố', 'VCI', true, 'VCI');
+
+    // Dòng (R4)
+    var d = S[1];
+    if (!d) { them('sai', 'R4', 'Thiếu dòng sau VCI-: 2D, 3D, WEB hoặc DEV.'); ctx.ok = false; return ctx; }
+    if (TU_DIEN.dong[d]) { fix.dong = d; phan('Dòng', d, true, TU_DIEN.dong[d].ten); }
+    else if (PHAN_MEM.indexOf(d) >= 0) {
+      them('sai', 'R4', '"' + d + '" là tên phần mềm. Dòng ghi theo đầu ra: 2D (tool ra bản vẽ) hoặc 3D (tool ra mô hình). Phần mềm ghi ở cột Nền tảng.');
+      phan('Dòng', d, false); fixOk = false;
+    } else {
+      var gd = ganNhat(d, khoa(TU_DIEN.dong));
+      them('sai', 'R4', 'Dòng "' + d + '" không có. Dùng 2D, 3D, WEB hoặc DEV.' + (gd ? ' Có phải "' + gd + '"?' : ''));
+      phan('Dòng', d, false);
+      if (gd) fix.dong = gd; else fixOk = false;
+    }
+    ctx.dong = fix.dong;
+
+    // R12: phần là thuộc tính
+    S.slice(2).forEach(function (p) {
+      if (TU_THUOC_TINH.test(p)) {
+        if (fix.dong === 'DEV') them('canhBao', 'R12', 'DEV đã nghĩa là nội bộ / thử nghiệm, không cần thêm "' + p + '".');
+        else them('sai', 'R12', '"' + p + '" là trạng thái / ngày / phiên bản. Ghi ở cột riêng, không đưa vào mã.');
+      }
+    });
+
+    // DEV, WEB: phần sau là tên tự do
+    if (fix.dong === 'DEV' || fix.dong === 'WEB') {
+      var tuDo = S.slice(2);
+      if (!tuDo.length) { them('sai', 'R3', 'Sau VCI-' + fix.dong + '- cần một tên ngắn, ví dụ VCI-' + fix.dong + '-' + (fix.dong === 'DEV' ? 'REVIT' : 'INFRA') + '.'); fixOk = false; }
+      tuDo.forEach(function (p) { phan('Tên ' + (fix.dong === 'DEV' ? 'nội bộ' : 'ứng dụng'), p, true, p); });
+      if (fix.dong === 'DEV') {
+        tuDo = tuDo.filter(function (p) { return !TU_THUOC_TINH.test(p); });
+        if (!tuDo.length) fixOk = false;
+      }
+      ctx.ketCau = null;
+      sua.sp = fixOk ? ['VCI', fix.dong].concat(tuDo).join('-') : null;
+      kiemDoDai(sua.sp || raw, them);
+      return ctx;
+    }
+
+    // Kết cấu (R5)
+    var k = S[2];
+    if (!k) { them('sai', 'R5', 'Thiếu kết cấu: KCPD, KCPT, TIENICH, HAMCHUI hoặc THOATNUOC.'); ctx.ok = false; sua.sp = null; return ctx; }
+    var dangLoaiCau = null;
+    if (TU_DIEN.ketCau[k]) { fix.ketCau = k; phan('Kết cấu', k, true, TU_DIEN.ketCau[k].ten); }
+    else if (TU_DIEN.loaiCau[k] || NHAM_LOAI_CAU[k]) {
+      // viết loại cầu trước kết cấu
+      var kSau = S[3] && (TU_DIEN.ketCau[S[3]] ? S[3] : NHAM_KET_CAU[S[3]]);
+      them('sai', 'R5', 'Kết cấu đứng trước loại cầu.' + (kSau ? ' Viết: VCI-' + fix.dong + '-' + kSau + '-' + (TU_DIEN.loaiCau[k] ? k : NHAM_LOAI_CAU[k]) + '.' : ' Ví dụ: VCI-' + (fix.dong || '3D') + '-KCPT-' + (TU_DIEN.loaiCau[k] ? k : NHAM_LOAI_CAU[k]) + '.'));
+      phan('Kết cấu', k, false);
+      if (kSau) { fix.ketCau = kSau; dangLoaiCau = TU_DIEN.loaiCau[k] ? k : NHAM_LOAI_CAU[k]; phan('Loại cầu', S[3], false); S.splice(3, 1); }
+      else fixOk = false;
+    } else if (NHAM_KET_CAU[k]) {
+      them('sai', 'R5', '"' + k + '" → viết là ' + NHAM_KET_CAU[k] + ' (' + TU_DIEN.ketCau[NHAM_KET_CAU[k]].nghia.toLowerCase() + ').');
+      phan('Kết cấu', k, false); fix.ketCau = NHAM_KET_CAU[k];
+    } else {
+      var gk = ganNhat(k, khoa(TU_DIEN.ketCau));
+      them('sai', 'R5', 'Kết cấu "' + k + '" chưa có trong từ điển.' + (gk ? ' Có phải "' + gk + '"?' : ' Dùng KCPD, KCPT, TIENICH, HAMCHUI, THOATNUOC.'));
+      phan('Kết cấu', k, false);
+      if (gk) fix.ketCau = gk; else fixOk = false;
+    }
+    ctx.ketCau = fix.ketCau;
+
+    // Loại cầu (R6)
+    var lc = dangLoaiCau || S[3];
+    if (dangLoaiCau) { fix.loaiCau = dangLoaiCau; }
+    else if (lc) {
+      var kc = TU_DIEN.ketCau[fix.ketCau];
+      if (TU_CHUNG.indexOf(lc) >= 0) {
+        them('sai', 'R6', 'Dùng cho mọi loại cầu thì bỏ đuôi, không ghi "' + lc + '".');
+        phan('Loại cầu', lc, false); fix.loaiCau = null;
+      } else if (TU_THUOC_TINH.test(lc)) {
+        phan('Thuộc tính', lc, false); fix.loaiCau = null; // R12 đã báo
+      } else if (kc && !kc.coLoaiCau) {
+        them('sai', 'R6', 'Kết cấu ' + fix.ketCau + ' không có đuôi loại cầu.');
+        phan('Loại cầu', lc, false); fix.loaiCau = null;
+      } else if (TU_DIEN.loaiCau[lc]) { fix.loaiCau = lc; phan('Loại cầu', lc, true, TU_DIEN.loaiCau[lc].ten); }
+      else if (NHAM_LOAI_CAU[lc]) {
+        them('sai', 'R6', '"' + lc + '" → viết là ' + NHAM_LOAI_CAU[lc] + '.');
+        phan('Loại cầu', lc, false); fix.loaiCau = NHAM_LOAI_CAU[lc];
+      } else {
+        var gl = ganNhat(lc, khoa(TU_DIEN.loaiCau));
+        them('sai', 'R6', 'Loại cầu "' + lc + '" chưa có trong từ điển.' + (gl ? ' Có phải "' + gl + '"?' : ' Nếu là loại cầu mới, đề xuất thêm vào từ điển.'));
+        phan('Loại cầu', lc, false);
+        if (gl) fix.loaiCau = gl; else fixOk = false;
+      }
+    }
+    ctx.loaiCau = fix.loaiCau || null;
+
+    // Thừa phần
+    var soPhan = dangLoaiCau ? S.length : S.length;
+    if (soPhan > 4) {
+      them('sai', 'R3', 'Thừa phần: mã sản phẩm tối đa VCI-DÒNG-KẾT CẤU-LOẠI CẦU (đang có ' + soPhan + ' phần).');
+      S.slice(4).forEach(function (p) { phan('Thừa', p, false); });
+    }
+
+    sua.sp = fixOk && fix.dong && fix.ketCau ? ['VCI', fix.dong, fix.ketCau].concat(fix.loaiCau ? [fix.loaiCau] : []).join('-') : null;
+    kiemDoDai(sua.sp || raw, them);
+
+    // Tên chuẩn sản phẩm
+    if (fix.dong && fix.ketCau && TU_DIEN.ketCau[fix.ketCau]) {
+      kq.tenChuan.sanPham = 'VCI ' + TU_DIEN.dong[fix.dong].ten + ' · ' + TU_DIEN.ketCau[fix.ketCau].ten +
+        (fix.loaiCau && TU_DIEN.loaiCau[fix.loaiCau] ? ' · ' + TU_DIEN.loaiCau[fix.loaiCau].ten : '');
+    }
+    return ctx;
+  }
+
+  function kiemDoDai(maSP, them) {
+    if (maSP && maSP.length > TU_DIEN.doDaiToiDa) {
+      them('canhBao', 'R10', 'Mã sản phẩm dài ' + maSP.length + ' ký tự (> ' + TU_DIEN.doDaiToiDa + '), cột Mã trên portal sẽ xuống dòng.');
+    }
+  }
+
+  // Chuẩn hóa 1 tầng PascalCase: bỏ gạch, khoảng trắng; sửa chữ hoa nếu khớp từ điển
+  function chuanHoaTang(raw) {
+    var s = raw.replace(/[\s_\-]+/g, ' ').trim();
+    if (/\s/.test(s)) s = s.split(' ').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join('');
+    return s;
+  }
+
+  function kiemTinhNang(raw, ctx, kq, them, phan, sua) {
+    var s = chuanHoaTang(raw);
+    if (/[\-\s_]/.test(raw)) them('sai', 'R7', 'Phần tính năng viết liền, không dùng gạch / khoảng trắng.');
+
+    // DEV / WEB: tên tự do nhưng phải PascalCase
+    if (ctx.dong === 'DEV' || ctx.dong === 'WEB') {
+      if (!laPascal(s)) { them('sai', 'R7', 'Tính năng viết liền, hoa chữ đầu mỗi tiếng.'); sua.tn = sangPascal(s) || null; }
+      else sua.tn = s;
+      phan('Tính năng', raw, laPascal(raw), raw);
+      return;
+    }
+    var kc = TU_DIEN.ketCau[ctx.ketCau];
+
+    // TIENICH: Động từ + đối tượng
+    if (kc && kc.tienIch) {
+      var dt = tachTienTo(s, TU_DIEN.dongTu, true) || tachTienTo(s, TU_DIEN.dongTu, false);
+      if (!dt) {
+        them('sai', 'R7', 'Tính năng tiện ích bắt đầu bằng động từ: ' + khoa(TU_DIEN.dongTu).join(', ') + '. Ví dụ XuatIfc, TachMoHinh.');
+        phan('Tính năng', raw, false); sua.tn = null; return;
+      }
+      var doiTuong = dt.conLai;
+      var ok = dt.viet === dt.khoa && laPascal(s) && (!doiTuong || /^[A-Z]/.test(doiTuong));
+      if (!ok) them('sai', 'R7', 'Viết liền, hoa chữ đầu mỗi tiếng: ' + dt.khoa + (doiTuong ? sangPascal(doiTuong.replace(/([a-z])([A-Z])/g, '$1 $2')) : '') + '.');
+      if (!doiTuong) them('canhBao', 'R7', 'Nên ghi rõ đối tượng, ví dụ ' + dt.khoa + 'Ifc.');
+      var tnSua = dt.khoa + (doiTuong ? (/^[A-Z]/.test(doiTuong) ? doiTuong : doiTuong.charAt(0).toUpperCase() + doiTuong.slice(1)) : '');
+      phan('Động từ', dt.viet, dt.viet === dt.khoa, TU_DIEN.dongTu[dt.khoa].ten);
+      if (doiTuong) phan('Đối tượng', doiTuong, true, doiTuong);
+      sua.tn = tnSua;
+      // tên tiện ích: "VCI 3D · Tiện ích · Xuất …" — đối tượng do người đặt nên chỉ so phần đầu
+      kq.tenChuan.tienToTen = (kq.tenChuan.sanPham ? kq.tenChuan.sanPham + ' · ' : '') + TU_DIEN.dongTu[dt.khoa].ten;
+      kq.tenChuan.phanTN = TU_DIEN.dongTu[dt.khoa].ten + (doiTuong ? ' ' + doiTuong : '');
+      return;
+    }
+
+    // Bắt đầu bằng động từ (dạng nút bấm) ở kết cấu không phải TIENICH
+    var laDongTu = tachTienTo(s, TU_DIEN.dongTu, false);
+    var laBoMon = tachTienTo(s, TU_DIEN.boMon, false);
+    if (laDongTu && !laBoMon) {
+      them('sai', 'R7', 'Tính năng phải bắt đầu bằng bộ môn (' + khoa(TU_DIEN.boMon).join(', ') + '). Động từ chỉ dùng cho tính năng TIENICH; nút bấm trong add-in không cần mã riêng.');
+      phan('Tính năng', raw, false); sua.tn = null; return;
+    }
+
+    // Bộ môn
+    var bm = tachTienTo(s, TU_DIEN.boMon, true);
+    var bmLoiHoa = false;
+    if (!bm) {
+      bm = laBoMon;
+      if (bm) bmLoiHoa = true;
+    }
+    if (!bm) {
+      var dau = (s.match(/^[A-Za-z][a-z0-9]*/) || [s])[0];
+      var gb = ganNhat(dau, khoa(TU_DIEN.boMon));
+      them('sai', 'R7', 'Không nhận ra bộ môn ở đầu "' + raw + '".' + (gb ? ' Có phải "' + gb + '"?' : ' Dùng: ' + khoa(TU_DIEN.boMon).join(', ') + '.'));
+      phan('Bộ môn', dau, false);
+      if (gb) { bm = { khoa: gb, conLai: s.slice(dau.length), viet: dau }; }
+      else { sua.tn = null; return; }
+    } else {
+      phan('Bộ môn', bm.viet, !bmLoiHoa, TU_DIEN.boMon[bm.khoa].ten);
+    }
+
+    // Cấu kiện
+    var conLai = bm.conLai;
+    var ck = null, ckLoi = false;
+    if (!conLai) {
+      ck = null;
+    } else if (TU_DIEN.cauKien[conLai]) {
+      ck = conLai;
+    } else {
+      var ckHoa = timKhoaKhongPhanBietHoa(TU_DIEN.cauKien, conLai);
+      if (ckHoa) { ck = ckHoa; ckLoi = true; }
+      else {
+        var gc = ganNhat(conLai, khoa(TU_DIEN.cauKien));
+        them('sai', 'R7', 'Cấu kiện "' + conLai + '" chưa có trong từ điển.' + (gc ? ' Có phải "' + gc + '" (' + TU_DIEN.cauKien[gc].ten + ')?' : ' Nếu là cấu kiện mới, đề xuất thêm vào từ điển.'));
+        phan('Cấu kiện', conLai, false);
+        if (gc) ck = gc; else { sua.tn = null; return; }
+        ckLoi = 'tu';
+      }
+    }
+    if (bmLoiHoa || ckLoi === true || (!laPascal(raw) && !/[\-\s_]/.test(raw))) {
+      them('sai', 'R7', 'Viết liền, hoa chữ đầu mỗi tiếng: ' + bm.khoa + (ck || '') + '.');
+    }
+    if (ck && ckLoi !== 'tu') phan('Cấu kiện', conLai, ckLoi !== true, TU_DIEN.cauKien[ck].ten);
+    if (!ck) kq.loi.push({ muc: 'thongTin', qt: 'R7', noiDung: 'Không ghi cấu kiện: tính năng áp cho cả ' + (kc ? kc.nghia.toLowerCase() : 'kết cấu') + '.', sua: null });
+
+    // R8: cấu kiện đúng kết cấu
+    var ketCauSua = null;
+    if (ck && ctx.ketCau && TU_DIEN.cauKien[ck].thuoc.indexOf(ctx.ketCau) < 0) {
+      var dung = TU_DIEN.cauKien[ck].thuoc[0];
+      them('sai', 'R8', '"' + ck + '" (' + TU_DIEN.cauKien[ck].ten + ') thuộc ' + dung + ', không thuộc ' + ctx.ketCau + '.');
+      var kcDung = TU_DIEN.ketCau[dung];
+      if (sua.sp && (!ctx.loaiCau || kcDung.coLoaiCau)) {
+        ketCauSua = dung;
+        var p = sua.sp.split('-');
+        p[2] = dung;
+        if (!kcDung.coLoaiCau) p = p.slice(0, 3);
+        sua.sp = p.join('-');
+      } else sua.sp = null;
+    }
+
+    sua.tn = bm.khoa + (ck || '');
+    // Tên tính năng viết đủ như sản phẩm: "VCI 3D · KCPD · Cốt thép cọc khoan nhồi"
+    var phanTN = TU_DIEN.boMon[bm.khoa].tenDu + (ck ? ' ' + TU_DIEN.cauKien[ck].ten : '');
+    kq.tenChuan.phanTN = phanTN;
+    kq.tenChuan.tinhNang = kq.tenChuan.sanPham ? kq.tenChuan.sanPham + ' · ' + phanTN : phanTN;
+  }
+
+  // Tầng 3 "Khác": tùy chọn, giá trị trong TU_DIEN.khac (mặc định rỗng, người dùng thêm)
+  function kiemKhac(raw, ctx, kq, them, phan, sua) {
+    var s = chuanHoaTang(raw);
+    if (/[\-\s_]/.test(raw)) them('sai', 'R9', 'Phần Khác viết liền, không dùng gạch / khoảng trắng.');
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(s)) {
+      them('sai', 'R9', 'Phần Khác chỉ gồm chữ không dấu và số, bắt đầu bằng chữ.');
+      phan('Khác', raw, false); sua.khac = null; return;
+    }
+    var ma = TU_DIEN.khac[s] ? s : timKhoaKhongPhanBietHoa(TU_DIEN.khac, s);
+    var dungHoa = laPascal(raw) && (!ma || raw === ma);
+    var viet = ma || (s.charAt(0).toUpperCase() + s.slice(1));
+    if (!dungHoa) them('sai', 'R9', 'Viết liền, hoa chữ đầu mỗi tiếng: ' + viet + '.');
+    sua.khac = viet;
+    if (ma) {
+      phan('Khác', raw, dungHoa, TU_DIEN.khac[ma].ten);
+      if (kq.tenChuan.tinhNang) kq.tenChuan.tinhNang += ' · ' + TU_DIEN.khac[ma].ten;
+    } else {
+      them('canhBao', 'R9', 'Giá trị Khác "' + viet + '" chưa có trong từ điển (từ mới, cần duyệt).');
+      phan('Khác', raw, dungHoa, viet);
+      kq.tenChuan.tinhNang = null;
+      kq.loi.push({ muc: 'thongTin', qt: 'R11', noiDung: 'Chưa so được tên đầy đủ vì giá trị Khác chưa có trong từ điển.', sua: null });
+    }
+  }
+
+  function ketThuc(kq, deXuat, tuyChon) {
+    var coSai = kq.loi.some(function (l) { return l.muc === 'sai'; });
+    var coCB = kq.loi.some(function (l) { return l.muc === 'canhBao'; });
+    kq.muc = coSai ? 'sai' : coCB ? 'canhBao' : 'dung';
+    if (deXuat && deXuat !== kq.ma && !tuyChon.khongGoiY) {
+      var thu = phanTich(deXuat, { khongGoiY: true });
+      if (thu.muc !== 'sai') { kq.goiY = deXuat; kq.docLaGoiY = thu.docLa; kq.tenChuanGoiY = thu.tenChuan; }
+    }
+    return kq;
+  }
+
+  // ===================================================================================
+  // Kiểm tên hiển thị
+  // ===================================================================================
+  function chuanHoaTen(s) {
+    return String(s == null ? '' : s).normalize('NFC').replace(/\s+/g, ' ')
+      .replace(/\s*[·•|]\s*/g, ' · ').replace(/\s+[-–—]\s+/g, ' · ').trim();
+  }
+  function kiemTen(kq, tenVao) {
+    var ten = chuanHoaTen(tenVao);
+    kq.tenNhap = ten;
+    if (!ten) return kq;
+    var loi = [];
+    // R12 trong tên
+    var tuTen = ' ' + boDau(ten).toLowerCase().replace(/[^a-z0-9]+/g, ' ') + ' ';
+    var gap = TU_THUOC_TINH_TEN.filter(function (w) { return tuTen.indexOf(' ' + w.replace(/-/g, ' ') + ' ') >= 0; });
+    if (/[\[\]()]/.test(ten) && /\[/.test(ten)) gap.push('[…]');
+    if (/\d{6,}/.test(ten)) gap.push('ngày/số phiên bản');
+    if (gap.length) loi.push({ muc: 'canhBao', qt: 'R12', noiDung: 'Tên có "' + gap.join('", "') + '": trạng thái / phần mềm / phiên bản ghi ở cột riêng.', sua: null });
+
+    var chuan = null, chiDau = null;
+    if (kq.loai === 'sanPham') chuan = kq.tenChuan.sanPham;
+    else if (kq.loai === 'tinhNang') { chuan = kq.tenChuan.tinhNang; if (!chuan) chiDau = kq.tenChuan.tienToTen; }
+
+    if (chuan) {
+      var a = ten, b = chuanHoaTen(chuan);
+      kq.tenGoiY = b;
+      if (a === b) { /* đúng */ }
+      else if (a.toLowerCase() === b.toLowerCase()) loi.push({ muc: 'canhBao', qt: 'R11', noiDung: 'Sai chữ hoa / thường. Tên chuẩn: "' + b + '".', sua: b });
+      else if (boDau(a).toLowerCase() === boDau(b).toLowerCase()) loi.push({ muc: 'sai', qt: 'R11', noiDung: 'Sai hoặc thiếu dấu. Tên chuẩn: "' + b + '".', sua: b });
+      else loi.push({ muc: 'sai', qt: 'R11', noiDung: 'Tên chưa theo quy ước. Tên chuẩn: "' + b + '".', sua: b });
+    } else if (chiDau) {
+      if (ten.toLowerCase().indexOf(chuanHoaTen(chiDau).toLowerCase()) !== 0) loi.push({ muc: 'canhBao', qt: 'R11', noiDung: 'Tên nên bắt đầu bằng "' + chiDau + '" cho khớp mã.', sua: null });
+    } else if (kq.nguCanh && (kq.nguCanh.dong === 'DEV' || kq.nguCanh.dong === 'WEB')) {
+      loi.push({ muc: 'thongTin', qt: 'R11', noiDung: 'Dòng ' + kq.nguCanh.dong + ': tên đặt tự do.', sua: null });
+    }
+    kq.loi = kq.loi.concat(loi);
+    var coSai = kq.loi.some(function (l) { return l.muc === 'sai'; });
+    var coCB = kq.loi.some(function (l) { return l.muc === 'canhBao'; });
+    kq.muc = coSai ? 'sai' : coCB ? 'canhBao' : 'dung';
+    return kq;
+  }
+
+  function kiemTra(ma, ten) {
+    var kq = phanTich(ma);
+    if (ten != null && String(ten).trim() !== '' && kq.loai !== 'cu') kiemTen(kq, ten);
+    return kq;
+  }
+
+  // Dán nhiều dòng: "Mã<Tab>Tên" (copy từ portal / Excel) hoặc "Mã | Tên" hoặc chỉ "Mã"
+  function kiemTraDanhSach(vanBan) {
+    var dong = String(vanBan == null ? '' : vanBan).split(/\r?\n/);
+    var ketQua = [], daGap = {};
+    dong.forEach(function (d, i) {
+      if (!d.trim()) return;
+      var ma, ten;
+      if (d.indexOf('\t') >= 0) { var t = d.split('\t'); ma = t[0]; ten = t.slice(1).join(' ').trim(); }
+      else if (d.indexOf(' | ') >= 0) { var u = d.split(' | '); ma = u[0]; ten = u.slice(1).join(' | ').trim(); }
+      else { ma = d; ten = ''; }
+      var kq = kiemTra(ma, ten);
+      kq.dong = i + 1;
+      var k = kq.ma.toUpperCase();
+      if (daGap[k]) {
+        kq.loi.push({ muc: 'sai', qt: 'R13', noiDung: 'Trùng mã với dòng ' + daGap[k] + '.', sua: null });
+        kq.muc = 'sai';
+      } else daGap[k] = kq.dong;
+      ketQua.push(kq);
+    });
+    var tong = { dung: 0, canhBao: 0, sai: 0 };
+    ketQua.forEach(function (k) { tong[k.muc]++; });
+    return { ketQua: ketQua, tong: tong };
+  }
+
+  // ===================================================================================
+  // Tạo mã từ lựa chọn (tab "Tạo mã")
+  // ===================================================================================
+  function taoMa(c) {
+    c = c || {};
+    var r = { maSanPham: null, maTinhNang: null, tenSanPham: null, tenTinhNang: null, phanTN: null };
+    if (!c.dong) return r;
+    if (c.dong === 'DEV' || c.dong === 'WEB') {
+      var tenTuDo = sangPascal(c.tenTuDo || '').toUpperCase();
+      if (tenTuDo) r.maSanPham = 'VCI-' + c.dong + '-' + tenTuDo;
+      return r;
+    }
+    if (!c.ketCau) return r;
+    var kc = TU_DIEN.ketCau[c.ketCau];
+    r.maSanPham = ['VCI', c.dong, c.ketCau].concat(c.loaiCau && kc.coLoaiCau ? [c.loaiCau] : []).join('-');
+    r.tenSanPham = 'VCI ' + TU_DIEN.dong[c.dong].ten + ' · ' + kc.ten + (c.loaiCau && kc.coLoaiCau ? ' · ' + TU_DIEN.loaiCau[c.loaiCau].ten : '');
+    var ma = null, phan = null;
+    if (kc.tienIch) {
+      if (c.dongTuTN) { ma = c.dongTuTN + sangPascal(c.doiTuongTN || ''); phan = (TU_DIEN.dongTu[c.dongTuTN].ten + ' ' + (c.doiTuongTN || '').trim()).trim(); }
+    } else if (c.boMon) {
+      ma = c.boMon + (c.cauKien || '');
+      phan = TU_DIEN.boMon[c.boMon].tenDu + (c.cauKien ? ' ' + TU_DIEN.cauKien[c.cauKien].ten : '');
+    }
+    if (ma) {
+      var khac = c.khac && TU_DIEN.khac[c.khac] ? c.khac : null;
+      r.maTinhNang = r.maSanPham + '.' + ma + (khac ? '.' + khac : '');
+      r.phanTN = phan;
+      // Tên tính năng viết đủ như sản phẩm
+      r.tenTinhNang = r.tenSanPham + ' · ' + phan + (khac ? ' · ' + TU_DIEN.khac[khac].ten : '');
+    }
+    return r;
+  }
+
+  // Danh sách cấu kiện hợp lệ cho 1 kết cấu
+  function cauKienCua(ketCau) {
+    return khoa(TU_DIEN.cauKien).filter(function (k) { return TU_DIEN.cauKien[k].thuoc.indexOf(ketCau) >= 0; });
+  }
+
+  // ===================================================================================
+  // Thêm từ mới (người dùng tự thêm trong tool). Từ mới gắn moi:true = CHƯA DUYỆT.
+  // ===================================================================================
+  var TANG_TU = {
+    dong: { ten: 'Dòng', kieu: 'HOA', toiDa: 4 },
+    ketCau: { ten: 'Kết cấu', kieu: 'HOA', toiDa: 10 },
+    loaiCau: { ten: 'Loại cầu', kieu: 'HOA', toiDa: 7 }, // VCI-3D-KCPT- (12) + 7 = 19 ký tự (R10)
+    boMon: { ten: 'Bộ môn', kieu: 'Pascal', toiDa: 16 },
+    cauKien: { ten: 'Cấu kiện', kieu: 'Pascal', toiDa: 20 },
+    dongTu: { ten: 'Động từ', kieu: 'Pascal', toiDa: 12 },
+    khac: { ten: 'Khác', kieu: 'Pascal', toiDa: 20 }
+  };
+  function chuanMa(tang, s) {
+    var p = sangPascal(s);
+    return TANG_TU[tang] && TANG_TU[tang].kieu === 'HOA' ? p.toUpperCase() : p;
+  }
+  function thuongDau(s) { return s.length > 1 && s.charAt(1) === s.charAt(1).toLowerCase() ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+  function themTuMoi(tang, maVao, tenVao, tuyChon) {
+    tuyChon = tuyChon || {};
+    var cfg = TANG_TU[tang];
+    if (!cfg) return { ok: false, loi: 'Không có tầng "' + tang + '".' };
+    var ten = String(tenVao || '').trim().replace(/\s+/g, ' ');
+    if (!ten) return { ok: false, loi: 'Nhập tên tiếng Việt.' };
+    var ma = chuanMa(tang, maVao && String(maVao).trim() ? maVao : ten);
+    if (!ma) return { ok: false, loi: 'Mã chỉ gồm chữ không dấu và số.' };
+    if (!/^[A-Za-z]/.test(ma)) return { ok: false, loi: 'Mã phải bắt đầu bằng chữ.' };
+    if (ma.length > cfg.toiDa) return { ok: false, loi: 'Mã "' + ma + '" dài ' + ma.length + ' ký tự, tối đa ' + cfg.toiDa + '. Gõ mã gọn hơn vào ô Mã.' };
+    var trung = timKhoaKhongPhanBietHoa(TU_DIEN[tang], ma);
+    if (trung) {
+      var cu = TU_DIEN[tang][trung];
+      return { ok: false, loi: 'Đã có ' + trung + ' (' + (cu.nghia || cu.ten) + ').' };
+    }
+    if (tang === 'dong' && ma === 'VCI') return { ok: false, loi: 'Không dùng VCI làm dòng.' };
+    if (tang === 'cauKien' && !(tuyChon.thuoc && TU_DIEN.ketCau[tuyChon.thuoc])) return { ok: false, loi: 'Chọn kết cấu trước khi thêm cấu kiện.' };
+    var muc;
+    if (tang === 'dong') muc = { ten: ma, nghia: ten };
+    else if (tang === 'ketCau') muc = { ten: ten, tenNho: thuongDau(ten), nghia: ten, coLoaiCau: !!tuyChon.coLoaiCau };
+    else if (tang === 'loaiCau') muc = { ten: ten };
+    else if (tang === 'boMon') muc = { ten: ten, nghia: ten };
+    else if (tang === 'cauKien') muc = { ten: thuongDau(ten), thuoc: [tuyChon.thuoc] };
+    else muc = { ten: ten };
+    muc.moi = true;
+    TU_DIEN[tang][ma] = muc;
+    return { ok: true, ma: ma };
+  }
+  function xoaTuMoi(tang, ma) {
+    if (!TU_DIEN[tang] || !TU_DIEN[tang][ma] || !TU_DIEN[tang][ma].moi) return false;
+    delete TU_DIEN[tang][ma];
+    if (tang === 'ketCau') khoa(TU_DIEN.cauKien).forEach(function (k) { if (TU_DIEN.cauKien[k].moi && TU_DIEN.cauKien[k].thuoc[0] === ma) delete TU_DIEN.cauKien[k]; });
+    return true;
+  }
+  function danhSachTuMoi() {
+    var ds = [];
+    khoa(TANG_TU).forEach(function (tang) {
+      khoa(TU_DIEN[tang]).forEach(function (ma) {
+        var m = TU_DIEN[tang][ma];
+        if (m.moi) ds.push({ tang: tang, ma: ma, ten: tang === 'dong' ? m.nghia : m.ten, thuoc: m.thuoc ? m.thuoc[0] : undefined, coLoaiCau: m.coLoaiCau });
+      });
+    });
+    return ds;
+  }
+
+  return {
+    TU_DIEN: TU_DIEN, QUY_TAC: QUY_TAC, MA_CU: MA_CU, TANG_TU: TANG_TU,
+    phanTich: phanTich, kiemTra: kiemTra, kiemTen: kiemTen, kiemTraDanhSach: kiemTraDanhSach,
+    taoMa: taoMa, cauKienCua: cauKienCua, boDau: boDau, sangPascal: sangPascal, chuanHoaTen: chuanHoaTen,
+    chuanMa: chuanMa, themTuMoi: themTuMoi, xoaTuMoi: xoaTuMoi, danhSachTuMoi: danhSachTuMoi
+  };
+});
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var N = window.VCINaming, T = N.TU_DIEN, K = Object.keys;
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var KHOA_LUU = 'vci-tu-moi-v1';
+  var MAU = { dong: 'c-dong', ketCau: 'c-kc', loaiCau: 'c-lc', boMon: 'c-tn', cauKien: 'c-tn', dongTu: 'c-tn', khac: 'c-lenh' };
+
+  $('phienBan').textContent = 'Quy ước đặt mã v' + T.phienBan + ' · ' + T.ngay;
+  $('footVer').textContent = 'Từ điển v' + T.phienBan + ' · ' + T.ngay;
+
+  // ---------- từ mới: nạp / lưu ----------
+  function luu() { try { localStorage.setItem(KHOA_LUU, JSON.stringify(N.danhSachTuMoi())); } catch (e) {} }
+  (function nap() {
+    var ds = [];
+    try { ds = JSON.parse(localStorage.getItem(KHOA_LUU) || '[]') || []; } catch (e) { ds = []; }
+    // kết cấu trước để cấu kiện mới có chỗ thuộc
+    ds.sort(function (a, b) { return (a.tang === 'ketCau' ? 0 : 1) - (b.tang === 'ketCau' ? 0 : 1); });
+    ds.forEach(function (t) { N.themTuMoi(t.tang, t.ma, t.ten, { thuoc: t.thuoc, coLoaiCau: t.coLoaiCau }); });
+  })();
+
+  // ---------- trạng thái chọn ----------
+  var S = { dong: '3D', ketCau: 'KCPT', loaiCau: 'DUCHANG', boMon: 'Cap', cauKien: '', dongTuTN: 'Xuat', khac: '' };
+  var moForm = null; // tầng đang mở form thêm
+  function laTuDo() { return S.dong === 'DEV' || S.dong === 'WEB'; }
+  function kc() { return T.ketCau[S.ketCau] || {}; }
+
+  // ---------- ô chọn ----------
+  function moTa(tang, ma) {
+    var m = T[tang][ma];
+    if (tang === 'dong' || tang === 'ketCau' || tang === 'boMon') return m.nghia || m.ten;
+    return m.ten;
+  }
+  function veO(tang, vai, ma, chon) {
+    var m = T[tang][ma];
+    var nut = '<button type="button" class="opt ' + (m.moi ? 'moi' : '') + '" aria-pressed="' + (chon ? 'true' : 'false') + '" data-chon="' + esc(ma) + '">' +
+      '<b>' + esc(ma) + (m.moi ? '<span class="tag">MỚI</span>' : '') + '</b><small>' + esc(moTa(tang, ma)) + '</small></button>';
+    if (!m.moi) return nut;
+    return '<span class="optw">' + nut + '<button type="button" class="xoa" data-xoa="' + esc(ma) + '" title="Xóa từ mới ' + esc(ma) + '" aria-label="Xóa từ mới ' + esc(ma) + '">×</button></span>';
+  }
+  function veHang(el) {
+    var tang = el.getAttribute('data-tang'), vai = el.getAttribute('data-vai');
+    var dangChon, ds, khong = null;
+    if (tang === 'dong') { dangChon = S.dong; ds = K(T.dong); }
+    else if (tang === 'ketCau') { dangChon = S.ketCau; ds = K(T.ketCau); }
+    else if (tang === 'loaiCau') { dangChon = S.loaiCau; ds = K(T.loaiCau); khong = 'mọi loại cầu'; }
+    else if (tang === 'boMon') { dangChon = S.boMon; ds = K(T.boMon); }
+    else if (tang === 'cauKien') { dangChon = S.cauKien; ds = N.cauKienCua(S.ketCau); khong = 'cả ' + (kc().tenNho || 'kết cấu'); }
+    else if (vai === 'tn') { dangChon = S.dongTuTN; ds = K(T.dongTu); }
+    else { dangChon = S.khac; ds = K(T.khac); khong = 'không có'; }
+    var h = '';
+    if (khong) h += '<button type="button" class="opt none" aria-pressed="' + (!dangChon ? 'true' : 'false') + '" data-chon=""><b>—</b><small>' + esc(khong) + '</small></button>';
+    h += ds.map(function (ma) { return veO(tang, vai, ma, ma === dangChon); }).join('');
+    h += '<button type="button" class="opt add" data-mo="1"><b>+ Thêm</b><small>' + esc(N.TANG_TU[tang].ten.toLowerCase()) + ' mới</small></button>';
+    el.innerHTML = h;
+    // form thêm (giữ nguyên nếu đang mở ở hàng này)
+    var key = tang + (vai ? ':' + vai : '');
+    var f = el.parentNode.querySelector('.addf');
+    if (moForm === key && !f) el.insertAdjacentHTML('afterend', formThem(tang));
+    if (moForm !== key && f) f.remove();
+  }
+  function formThem(tang) {
+    var hoa = N.TANG_TU[tang].kieu === 'HOA';
+    var phu = '';
+    if (tang === 'ketCau') phu = '<label class="chk"><input type="checkbox" name="coLoaiCau"> Kết cấu này có chia theo loại cầu (như KCPD, KCPT)</label>';
+    if (tang === 'cauKien') phu = '<div class="hint">Cấu kiện mới thuộc <b>' + esc(S.ketCau) + '</b> (' + esc(kc().nghia || '') + ').</div>';
+    return '<form class="addf" novalidate>' +
+      '<label><span class="lbl">Tên tiếng Việt</span><input class="txt" name="ten" type="text" autocomplete="off" placeholder="' + (tang === 'loaiCau' ? 'vd: Cầu dây văng' : tang === 'cauKien' ? 'vd: Tháp cầu' : tang === 'boMon' ? 'vd: Gối cầu' : tang === 'dongTu' ? 'vd: Cập nhật' : tang === 'khac' ? 'vd: Bản vẽ chi tiết' : 'vd: Cầu tạm') + '"></label>' +
+      '<label><span class="lbl">Mã ' + (hoa ? '(IN HOA)' : '(viết liền)') + ' · tối đa ' + N.TANG_TU[tang].toiDa + '</span><input class="txt mono" name="ma" type="text" autocomplete="off" spellcheck="false" placeholder="tự sinh từ tên"></label>' +
+      '<div class="btns"><button class="btn primary" type="submit">Thêm</button><button class="btn" type="button" data-huy="1">Hủy</button></div>' +
+      phu + '<div class="err" role="alert"></div></form>';
+  }
+
+  // ---------- ghép mã ----------
+  function seg(lop, ma, tang, nghia) {
+    return '<div class="seg ' + lop + '"><b>' + esc(ma) + '</b><small><i>' + esc(tang) + '</i>' + esc(nghia || '') + '</small></div>';
+  }
+  function sep(c) { return '<span class="sep">' + c + '</span>'; }
+  function veKetQua() {
+    var tienIch = !!kc().tienIch;
+    var r = N.taoMa({
+      dong: S.dong, ketCau: S.ketCau, loaiCau: S.loaiCau || null,
+      boMon: tienIch ? null : S.boMon, cauKien: tienIch ? null : (S.cauKien || null),
+      dongTuTN: tienIch ? S.dongTuTN : null, doiTuongTN: $('inDoiTuongTN').value,
+      khac: S.khac || null, tenTuDo: $('inTuDo').value
+    });
+    // thước mã sống
+    var a = seg('c-pre', 'VCI', 'Tiền tố', 'cố định') + sep('-') + seg('c-dong', S.dong, 'Dòng', T.dong[S.dong].nghia);
+    var doc = [T.dong[S.dong].nghia];
+    if (laTuDo()) {
+      var td = r.maSanPham ? r.maSanPham.split('-').slice(2).join('-') : '…';
+      a += sep('-') + seg('c-kc', td, 'Tên ngắn', '');
+    } else {
+      a += sep('-') + seg('c-kc', S.ketCau, 'Kết cấu', kc().nghia);
+      doc.push(kc().nghia);
+      if (kc().coLoaiCau && S.loaiCau) { a += sep('-') + seg('c-lc', S.loaiCau, 'Loại cầu', T.loaiCau[S.loaiCau].ten); doc.push(T.loaiCau[S.loaiCau].ten); }
+      else if (kc().coLoaiCau) doc.push('mọi loại cầu');
+      if (r.maTinhNang) { a += sep('.') + seg('c-tn', r.maTinhNang.split('.')[1], 'Tính năng', r.phanTN); doc.push(r.phanTN); }
+      if (r.maTinhNang && S.khac && T.khac[S.khac]) { a += sep('.') + seg('c-lenh', S.khac, 'Khác', T.khac[S.khac].ten); doc.push(T.khac[S.khac].ten); }
+    }
+    $('anat').innerHTML = a;
+    $('docLa').innerHTML = 'Đọc là: <b>' + esc(doc.join(' · ')) + '</b>';
+
+    function out(lop, nhan, ma, ten, ghi) {
+      if (!ma) return '<div class="out empty"><span class="lbl">' + nhan + '</span><span>' + (ghi || '—') + '</span></div>';
+      return '<div class="out ' + lop + '"><div class="h"><span class="lbl">' + nhan + '</span>' + (ghi ? '<span class="lbl" style="letter-spacing:.04em;text-transform:none">' + ghi + '</span>' : '') + '</div>' +
+        '<div class="v"><code>' + esc(ma) + '</code><button class="btn sm" type="button" data-chep="' + esc(ma) + '">Chép mã</button></div>' +
+        (ten ? '<div class="v"><span class="t">' + esc(ten) + '</span><button class="btn sm" type="button" data-chep="' + esc(ten) + '">Chép tên</button></div>' : '') + '</div>';
+    }
+    $('outs').innerHTML =
+      out('c-kc', 'Sản phẩm', r.maSanPham, r.tenSanPham, r.maSanPham ? 'tạo trên portal' : 'nhập tên ngắn') +
+      (laTuDo() ? '' : out('c-tn', 'Tính năng', r.maTinhNang, r.tenTinhNang, r.maTinhNang ? 'tạo trên portal' : 'chọn bộ môn'));
+    hienTai = r;
+
+    // cảnh báo
+    var cb = [];
+    if (r.maSanPham && r.maSanPham.length > T.doDaiToiDa) cb.push('<b>Mã sản phẩm dài ' + r.maSanPham.length + ' ký tự</b> (quá ' + T.doDaiToiDa + '), cột Mã trên portal sẽ xuống dòng.');
+    var dung = [];
+    [['dong', S.dong], ['ketCau', S.ketCau], ['loaiCau', kc().coLoaiCau ? S.loaiCau : ''], ['boMon', kc().tienIch ? '' : S.boMon], ['cauKien', kc().tienIch ? '' : S.cauKien], ['dongTu', kc().tienIch ? S.dongTuTN : ''], ['khac', S.khac]]
+      .forEach(function (p) { if (!laTuDo() || p[0] === 'dong') { if (p[1] && T[p[0]][p[1]] && T[p[0]][p[1]].moi && dung.indexOf(p[1]) < 0) dung.push(p[1]); } });
+    if (dung.length) cb.push('<b>Đang dùng từ mới chưa duyệt:</b> ' + dung.map(esc).join(', ') + '. Gửi người duyệt trước khi tạo trên portal.');
+    $('canhBao').innerHTML = cb.map(function (x) { return '<div class="warn">' + x + '</div>'; }).join('');
+
+    // danh sách từ mới
+    var tm = N.danhSachTuMoi();
+    $('tuMoi').hidden = !tm.length;
+    $('dsTuMoi').innerHTML = tm.map(function (t) {
+      return '<li>' + esc(N.TANG_TU[t.tang].ten) + ': <code>' + esc(t.ma) + '</code> = ' + esc(t.ten) + (t.thuoc ? ' (thuộc ' + esc(t.thuoc) + ')' : '') + (t.tang === 'ketCau' && t.coLoaiCau ? ' (có loại cầu)' : '') + '</li>';
+    }).join('');
+  }
+  var hienTai = null;
+
+  function veTatCa() {
+    $('r-tuDo').hidden = !laTuDo();
+    $('r-ketCau').hidden = laTuDo();
+    $('r-loaiCau').hidden = laTuDo() || !kc().coLoaiCau;
+    $('r-boMon').hidden = laTuDo() || !!kc().tienIch;
+    $('r-cauKien').hidden = laTuDo() || !!kc().tienIch;
+    $('r-tienIch').hidden = laTuDo() || !kc().tienIch;
+    $('r-khac').hidden = laTuDo();
+    document.querySelectorAll('.opts').forEach(veHang);
+    veKetQua();
+  }
+
+  // ---------- sự kiện ----------
+  document.querySelector('.picker').addEventListener('click', function (e) {
+    var hang = e.target.closest('.prow'); if (!hang) return;
+    var opts = hang.querySelector('.opts'); if (!opts) return;
+    var tang = opts.getAttribute('data-tang'), vai = opts.getAttribute('data-vai');
+    var key = tang + (vai ? ':' + vai : '');
+    var chon = e.target.closest('[data-chon]'), xoa = e.target.closest('[data-xoa]'), mo = e.target.closest('[data-mo]'), huy = e.target.closest('[data-huy]');
+    if (chon) {
+      var v = chon.getAttribute('data-chon');
+      if (tang === 'dong') S.dong = v;
+      else if (tang === 'ketCau') { if (S.ketCau !== v) S.loaiCau = ''; S.ketCau = v; if (N.cauKienCua(v).indexOf(S.cauKien) < 0) S.cauKien = ''; }
+      else if (tang === 'loaiCau') S.loaiCau = v;
+      else if (tang === 'boMon') S.boMon = v;
+      else if (tang === 'cauKien') S.cauKien = v;
+      else if (vai === 'tn') S.dongTuTN = v;
+      else S.khac = v;
+      veTatCa();
+    } else if (xoa) {
+      var ma = xoa.getAttribute('data-xoa');
+      N.xoaTuMoi(tang, ma); luu();
+      if (!T.dong[S.dong]) S.dong = '3D';
+      if (!T.ketCau[S.ketCau]) { S.ketCau = 'KCPT'; S.cauKien = ''; }
+      if (S.loaiCau && !T.loaiCau[S.loaiCau]) S.loaiCau = '';
+      if (!T.boMon[S.boMon]) S.boMon = 'Thep';
+      if (S.cauKien && !T.cauKien[S.cauKien]) S.cauKien = '';
+      if (!T.dongTu[S.dongTuTN]) S.dongTuTN = 'Xuat';
+      if (S.khac && !T.khac[S.khac]) S.khac = '';
+      veTatCa(); bao('Đã xóa ' + ma);
+    } else if (mo) {
+      moForm = moForm === key ? null : key;
+      veTatCa();
+      var f = hang.querySelector('.addf'); if (f) f.querySelector('[name="ten"]').focus();
+    } else if (huy) {
+      moForm = null; veTatCa();
+    }
+  });
+  // gõ tên -> gợi ý mã
+  document.querySelector('.picker').addEventListener('input', function (e) {
+    var f = e.target.closest('.addf'); if (!f) return;
+    var tang = f.parentNode.querySelector('.opts').getAttribute('data-tang');
+    if (e.target.name === 'ten') f.querySelector('[name="ma"]').placeholder = N.chuanMa(tang, e.target.value) || 'tự sinh từ tên';
+    f.querySelector('.err').textContent = '';
+  });
+  document.querySelector('.picker').addEventListener('submit', function (e) {
+    var f = e.target.closest('.addf'); if (!f) return;
+    e.preventDefault();
+    var opts = f.parentNode.querySelector('.opts');
+    var tang = opts.getAttribute('data-tang'), vai = opts.getAttribute('data-vai');
+    var cb = f.querySelector('[name="coLoaiCau"]');
+    var kq = N.themTuMoi(tang, f.querySelector('[name="ma"]').value, f.querySelector('[name="ten"]').value, { thuoc: S.ketCau, coLoaiCau: cb ? cb.checked : false });
+    if (!kq.ok) { f.querySelector('.err').textContent = kq.loi; return; }
+    luu();
+    if (tang === 'dong') S.dong = kq.ma;
+    else if (tang === 'ketCau') { S.ketCau = kq.ma; S.cauKien = ''; S.loaiCau = ''; }
+    else if (tang === 'loaiCau') S.loaiCau = kq.ma;
+    else if (tang === 'boMon') S.boMon = kq.ma;
+    else if (tang === 'cauKien') S.cauKien = kq.ma;
+    else if (vai === 'tn') S.dongTuTN = kq.ma;
+    else S.khac = kq.ma;
+    moForm = null; veTatCa(); bao('Đã thêm ' + kq.ma);
+  });
+  ['inDoiTuongTN', 'inTuDo'].forEach(function (id) { $(id).addEventListener('input', veKetQua); });
+
+  // ---------- chép ----------
+  var hen;
+  function bao(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(hen); hen = setTimeout(function () { t.hidden = true; }, 1800); }
+  function chep(text) {
+    function duPhong() {
+      var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      bao(ok ? 'Đã chép' : 'Chưa chép được, hãy bôi đen rồi bấm Ctrl+C');
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { bao('Đã chép'); }, duPhong);
+      else duPhong();
+    } catch (e) { duPhong(); }
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-chep]'); if (b) chep(b.getAttribute('data-chep')); });
+  $('btnChepHet').addEventListener('click', function () {
+    var r = hienTai || {};
+    var dong = [['Loại', 'Mã', 'Tên'].join('\t')];
+    if (r.maSanPham) dong.push(['Sản phẩm', r.maSanPham, r.tenSanPham || ''].join('\t'));
+    if (r.maTinhNang) dong.push(['Tính năng', r.maTinhNang, r.tenTinhNang || ''].join('\t'));
+    chep(dong.join('\n'));
+  });
+  $('btnDeXuat').addEventListener('click', function () {
+    var tm = N.danhSachTuMoi();
+    var t = 'Đề xuất thêm vào từ điển mã VCI (v' + T.phienBan + '):\n' + tm.map(function (x) {
+      return '- ' + N.TANG_TU[x.tang].ten + ': ' + x.ma + ' = ' + x.ten + (x.thuoc ? ' (thuộc ' + x.thuoc + ')' : '') + (x.tang === 'ketCau' && x.coLoaiCau ? ' (có chia loại cầu)' : '');
+    }).join('\n');
+    chep(t);
+  });
+  var henXoa = null;
+  $('btnXoaHet').addEventListener('click', function () {
+    var b = $('btnXoaHet');
+    if (!henXoa) { b.textContent = 'Bấm lần nữa để xóa hết'; henXoa = setTimeout(function () { henXoa = null; b.textContent = 'Xóa hết từ mới'; }, 3000); return; }
+    clearTimeout(henXoa); henXoa = null; b.textContent = 'Xóa hết từ mới';
+    N.danhSachTuMoi().filter(function (x) { return x.tang !== 'ketCau'; }).concat(N.danhSachTuMoi().filter(function (x) { return x.tang === 'ketCau'; }))
+      .forEach(function (x) { N.xoaTuMoi(x.tang, x.ma); });
+    luu();
+    S = { dong: T.dong[S.dong] ? S.dong : '3D', ketCau: T.ketCau[S.ketCau] ? S.ketCau : 'KCPT', loaiCau: T.loaiCau[S.loaiCau] ? S.loaiCau : '', boMon: T.boMon[S.boMon] ? S.boMon : 'Thep', cauKien: T.cauKien[S.cauKien] ? S.cauKien : '', dongTuTN: T.dongTu[S.dongTuTN] ? S.dongTuTN : 'Xuat', khac: T.khac[S.khac] ? S.khac : '' };
+    veTatCa(); bao('Đã xóa hết từ mới');
+  });
+
+  veTatCa();
+})();
+</script>
+</body>
+</html>
